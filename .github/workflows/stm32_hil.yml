@@ -29,12 +29,12 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
 
-          # ARM GCC from STM32CubeIDE install (your exact path)
+          # ARM GCC from STM32CubeIDE install
           $gccBin = "C:\ST\STM32CubeIDE_2.0.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.100.202509120712\tools\bin"
           if (-not (Test-Path $gccBin)) { throw "GCC bin path not found: $gccBin" }
           Add-Content -Path $env:GITHUB_PATH -Value $gccBin
 
-          # Try to find make inside STM32CubeIDE plugins (works for runner service user too)
+          # Find make inside STM32CubeIDE plugins
           $cubePlugins = "C:\ST\STM32CubeIDE_2.0.0\STM32CubeIDE\plugins"
           if (-not (Test-Path $cubePlugins)) { throw "CubeIDE plugins path not found: $cubePlugins" }
 
@@ -43,34 +43,36 @@ jobs:
             $mk = Get-ChildItem -Path $cubePlugins -Recurse -Filter "mingw32-make.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
           }
 
+          $makeExe = $null
           if ($mk) {
+            $makeExe = $mk.FullName
             $mkDir = Split-Path $mk.FullName -Parent
             Add-Content -Path $env:GITHUB_PATH -Value $mkDir
-            Write-Host "Found make: $($mk.FullName)"
-          } else {
-            Write-Host "No make.exe found inside CubeIDE plugins; trying common locations..."
+            Write-Host "Found make: $makeExe"
           }
 
-          # Common locations (if you later install MSYS2/Git/Chocolatey make)
+          # Optional: add common locations for coreutils (rm/mkdir/etc.)
           $candidates = @(
-            "C:\ProgramData\chocolatey\bin",
             "C:\msys64\usr\bin",
-            "C:\msys32\usr\bin",
             "C:\Program Files\Git\usr\bin",
             "C:\Program Files\Git\mingw64\bin",
-            "C:\Program Files (x86)\GnuWin32\bin"
+            "C:\ProgramData\chocolatey\bin"
           )
           foreach ($d in $candidates) {
             if (Test-Path $d) { Add-Content -Path $env:GITHUB_PATH -Value $d }
           }
 
-          # Resolve make command (make or mingw32-make)
-          $makeCmd = Get-Command make -ErrorAction SilentlyContinue
-          if (-not $makeCmd) { $makeCmd = Get-Command mingw32-make -ErrorAction SilentlyContinue }
-          if (-not $makeCmd) { throw "make not found for runner user. Install MSYS2 make or ensure CubeIDE provides make." }
+          # If CubeIDE didn't provide make, try system PATH (may work on some setups)
+          if (-not $makeExe) {
+            $cmd = Get-Command make -ErrorAction SilentlyContinue
+            if (-not $cmd) { $cmd = Get-Command mingw32-make -ErrorAction SilentlyContinue }
+            if ($cmd) { $makeExe = $cmd.Source }
+          }
 
-          "MAKE_EXE=$($makeCmd.Source)" | Out-File -FilePath $env:GITHUB_ENV -Append
-          Write-Host "MAKE_EXE=$($makeCmd.Source)"
+          if (-not $makeExe) { throw "make not found. Install MSYS2 make or ensure CubeIDE provides make." }
+
+          "MAKE_EXE=$makeExe" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "MAKE_EXE=$makeExe"
 
       - name: Toolchain sanity check
         shell: powershell
