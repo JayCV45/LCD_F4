@@ -17,27 +17,13 @@ jobs:
       - name: Mark workspace as safe for git
         shell: powershell
         run: |
+          $ErrorActionPreference = "Stop"
           git config --global --add safe.directory "$env:GITHUB_WORKSPACE"
           git config --global --add safe.directory "C:/Users/trina/Documents/actions-runner/_work/LCD_F4/LCD_F4"
           git config --global --list | findstr safe.directory
 
       - name: Checkout
         uses: actions/checkout@v4
-
-      # REMOVE actions/setup-python@v5 on self-hosted runner
-      - name: Verify Python
-        shell: powershell
-        run: |
-          $ErrorActionPreference = "Stop"
-          where python
-          python --version
-          python -m pip --version
-
-      - name: Install Python deps
-        shell: powershell
-        run: |
-          $ErrorActionPreference = "Stop"
-          python -m pip install -r scripts/requirements.txt
 
       - name: Locate firmware binary
         shell: powershell
@@ -55,13 +41,15 @@ jobs:
           ./scripts/flash.ps1 -BinaryPath "$env:BIN_PATH"
 
       - name: Run UART HIL
+        shell: powershell
         env:
           HIL_COM_PORT: "COM4"
           HIL_BAUD: "115200"
           HIL_TIMEOUT_S: "25"
           HIL_LOG_PATH: "hil.log"
         run: |
-          python scripts/hil_smoke_test.py
+          $ErrorActionPreference = "Stop"
+          ./scripts/hil_smoke_test.ps1
 
       - name: Upload HIL logs
         if: always()
