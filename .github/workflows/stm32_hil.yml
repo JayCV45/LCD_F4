@@ -27,19 +27,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r scripts/requirements.txt
 
-      # If you DON'T have make-based build in CI, remove this step and just flash an already-built .bin.
-      # Recommended: build via Makefile or CubeIDE headless once you're ready.
       - name: Locate firmware binary
         shell: pwsh
         run: |
-          $bin = Get-ChildItem -Path . -Recurse -Filter *.bin | Select-Object -First 1
-          if (-not $bin) { throw "No .bin found in repo workspace. Build must generate a .bin (e.g., Debug/*.bin)." }
+          $ErrorActionPreference = "Stop"
+          $bin = Get-ChildItem -Path Debug -Filter *.bin | Select-Object -First 1
+          if (-not $bin) { throw "No .bin found in Debug/. Ensure build outputs Debug/*.bin." }
           "BIN_PATH=$($bin.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Host "Using bin: $($bin.FullName)"
 
       - name: Flash target
         shell: pwsh
         run: |
+          $ErrorActionPreference = "Stop"
           ./scripts/flash.ps1 -BinaryPath "$env:BIN_PATH"
 
       - name: Run UART HIL
