@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Mark workspace as safe for git
-        shell: pwsh
+        shell: powershell
         run: |
           git config --global --add safe.directory "$env:GITHUB_WORKSPACE"
           git config --global --add safe.directory "C:/Users/trina/Documents/actions-runner/_work/LCD_F4/LCD_F4"
