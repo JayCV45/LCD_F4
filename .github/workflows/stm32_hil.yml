@@ -1,0 +1,59 @@
+name: stm32_hil
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: hil-stm32f4
+  cancel-in-progress: false
+
+jobs:
+  hil:
+    runs-on: [self-hosted, windows, hil]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/requirements.txt
+
+      # If you DON'T have make-based build in CI, remove this step and just flash an already-built .bin.
+      # Recommended: build via Makefile or CubeIDE headless once you're ready.
+      - name: Locate firmware binary
+        shell: pwsh
+        run: |
+          $bin = Get-ChildItem -Path . -Recurse -Filter *.bin | Select-Object -First 1
+          if (-not $bin) { throw "No .bin found in repo workspace. Build must generate a .bin (e.g., Debug/*.bin)." }
+          "BIN_PATH=$($bin.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "Using bin: $($bin.FullName)"
+
+      - name: Flash target
+        shell: pwsh
+        run: |
+          ./scripts/flash.ps1 -BinaryPath "$env:BIN_PATH"
+
+      - name: Run UART HIL
+        env:
+          HIL_COM_PORT: ${{ vars.HIL_COM_PORT }}
+          HIL_BAUD: "115200"
+          HIL_TIMEOUT_S: "25"
+          HIL_LOG_PATH: "hil.log"
+        run: |
+          python scripts/hil_smoke_test.py
+
+      - name: Upload HIL logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hil-logs
+          path: hil.log
