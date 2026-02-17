@@ -14,6 +14,13 @@ jobs:
     runs-on: [self-hosted, windows, stm32]
 
     steps:
+      - name: Mark workspace as safe for git
+        shell: pwsh
+        run: |
+          git config --global --add safe.directory "$env:GITHUB_WORKSPACE"
+          git config --global --add safe.directory "C:/Users/trina/Documents/actions-runner/_work/LCD_F4/LCD_F4"
+          git config --global --list | findstr safe.directory
+
       - name: Checkout
         uses: actions/checkout@v4
 
