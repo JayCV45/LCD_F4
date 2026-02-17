@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: hil-stm32f4
+  group: stm32-hil
   cancel-in-progress: false
 
 jobs:
