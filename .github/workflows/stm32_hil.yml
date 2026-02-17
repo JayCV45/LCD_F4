@@ -25,12 +25,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Toolchain sanity check
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          make --version
+          arm-none-eabi-gcc --version
+          arm-none-eabi-objcopy --version
+
+      - name: Build firmware (Debug)
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          make -C Debug clean all
+
       - name: Locate firmware binary
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           $bin = Get-ChildItem -Path Debug -Filter *.bin | Select-Object -First 1
-          if (-not $bin) { throw "No .bin found in Debug/." }
+          if (-not $bin) { throw "No .bin found in Debug/ after build." }
           "BIN_PATH=$($bin.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
           Write-Host "Using bin: $($bin.FullName)"
 
