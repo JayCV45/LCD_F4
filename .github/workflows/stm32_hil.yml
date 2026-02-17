@@ -26,7 +26,7 @@ jobs:
 
       # REMOVE actions/setup-python@v5 on self-hosted runner
       - name: Verify Python
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           where python
@@ -34,13 +34,13 @@ jobs:
           python -m pip --version
 
       - name: Install Python deps
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           python -m pip install -r scripts/requirements.txt
 
       - name: Locate firmware binary
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           $bin = Get-ChildItem -Path Debug -Filter *.bin | Select-Object -First 1
@@ -49,7 +49,7 @@ jobs:
           Write-Host "Using bin: $($bin.FullName)"
 
       - name: Flash target
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           ./scripts/flash.ps1 -BinaryPath "$env:BIN_PATH"
