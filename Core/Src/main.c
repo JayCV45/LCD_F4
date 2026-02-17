@@ -70,17 +70,20 @@ static void HIL_UartWrite(UART_HandleTypeDef *huart, const char *s)
 static void HIL_UartWriteLn(UART_HandleTypeDef *huart, const char *s)
 {
   HIL_UartWrite(huart, s);
-  HIL_UartWrite(huart, "\r\n");
+  HIL_UartWrite(huart, "\r\n");   // correct line ending
 }
 
-static void HIL_RunContract(UART_HandleTypeDef *huart)
+static void HIL_AnnounceWindow(UART_HandleTypeDef *huart, uint32_t window_ms)
 {
-  // Machine-parseable contract lines for GitHub Actions
+  uint32_t t0 = HAL_GetTick();
+
   HIL_UartWriteLn(huart, "HIL:BOOT");
 
-  // Keep first version deterministic and simple:
-  // If we reached here, UART is alive and firmware ran through init.
-  HIL_UartWriteLn(huart, "HIL:PASS");
+  while ((HAL_GetTick() - t0) < window_ms)
+  {
+    HIL_UartWriteLn(huart, "HIL:PASS");
+    HAL_Delay(200);
+  }
 }
 
 /* USER CODE END 0 */
@@ -118,7 +121,7 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   // 1) UART HIL contract (must be after MX_USART2_UART_Init())
-  HIL_RunContract(&huart2);
+  HIL_AnnounceWindow(&huart2, 8000);   // repeat PASS for 8 seconds
 
   // 2) Minimal LCD demo
   HD44780_Init(2);
