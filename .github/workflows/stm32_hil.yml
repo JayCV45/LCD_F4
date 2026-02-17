@@ -18,11 +18,15 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
+          git config --global credential.helper ""
           git config --global --add safe.directory "$env:GITHUB_WORKSPACE"
-          git config --global --add safe.directory "C:/Users/trina/Documents/actions-runner/_work/LCD_F4/LCD_F4"
 
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+          fetch-depth: 1
+          persist-credentials: true
 
       - name: Setup build tools PATH
         shell: powershell
