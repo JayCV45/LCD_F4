@@ -129,7 +129,7 @@ int main(void)
   HD44780_SetCursor(0, 0);
   HD44780_PrintStr("Hello");
   HD44780_SetCursor(0, 1);
-  HD44780_PrintStr("World1");
+  HD44780_PrintStr("World");
 
   // Optional: keep it stable for demo
   // (No delays needed for HIL; LCD stays showing text)
