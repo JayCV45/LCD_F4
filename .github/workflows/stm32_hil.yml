@@ -20,16 +20,46 @@ jobs:
           $ErrorActionPreference = "Stop"
           git config --global --add safe.directory "$env:GITHUB_WORKSPACE"
           git config --global --add safe.directory "C:/Users/trina/Documents/actions-runner/_work/LCD_F4/LCD_F4"
-          git config --global --list | findstr safe.directory
 
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup build tools PATH
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          # ARM GCC from your STM32CubeIDE install
+          $gccBin = "C:\ST\STM32CubeIDE_2.0.0\STM32CubeIDE\plugins\com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.13.3.rel1.win32_1.0.100.202509120712\tools\bin"
+          Add-Content -Path $env:GITHUB_PATH -Value $gccBin
+
+          # Common locations where make (and coreutils) may live
+          $candidates = @(
+            "C:\msys64\usr\bin",
+            "C:\msys32\usr\bin",
+            "C:\Program Files\Git\usr\bin",
+            "C:\Program Files\Git\mingw64\bin",
+            "C:\Program Files (x86)\GnuWin32\bin",
+            "C:\Strawberry\c\bin"
+          )
+
+          foreach ($d in $candidates) {
+            if (Test-Path $d) { Add-Content -Path $env:GITHUB_PATH -Value $d }
+          }
+
+          # Resolve make command (some installs use mingw32-make)
+          $makeCmd = Get-Command make -ErrorAction SilentlyContinue
+          if (-not $makeCmd) { $makeCmd = Get-Command mingw32-make -ErrorAction SilentlyContinue }
+          if (-not $makeCmd) { throw "make not found. Install MSYS2 (recommended) or add make to PATH for the runner." }
+
+          "MAKE_EXE=$($makeCmd.Source)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          Write-Host "MAKE_EXE=$($makeCmd.Source)"
 
       - name: Toolchain sanity check
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          make --version
+          & "$env:MAKE_EXE" --version
           arm-none-eabi-gcc --version
           arm-none-eabi-objcopy --version
 
@@ -37,7 +67,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
-          make -C Debug clean all
+          & "$env:MAKE_EXE" -C Debug clean all
 
       - name: Locate firmware binary
         shell: powershell
